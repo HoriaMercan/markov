@@ -1,0 +1,366 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{amsmath}
+\usepackage{tikz}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{amssymb}
+
+\usepackage{circuitikz}
+\usepackage{color}
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+\definecolor{bestred}{rgb}{0.9,0,0}
+
+\usetikzlibrary{arrows}
+\usepackage{amssymb}
+
+\title{Markov Chains}
+\author{Mercan Horia, Ariton Alexandru}
+\date{June 2023}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+We aim to find a solution for ay given labyrinth
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.5\linewidth]{Labyrinth.png}
+    \caption{Sample Labyrinth}
+    \label{fig:enter-label}
+\end{figure}
+
+For the entire labyrinth we make a adjacency matrix, whose element $a_{ij}$ is $1$ if one can reach from cell $i$ to cell $j$ in a single movement.
+
+From that we make a Stochastic matrix which we name $the\ link\ matrix$. For each cell we define the probability of reaching one of its' neighbours by the value $1 \over N$ where $N$ is the number of neighbours.
+
+We will consider the $winner$ state represented as a vertex in our graph. In the following matrices that we will build, the penultimate column and the penultimate line in the adjacency matrix represents the linkages between $winner$ states and positions in labyrinth. Also, the last line and the last column will be associated to the $loser$ state.
+
+For the given labyrinth they are as following.
+\setcounter{MaxMatrixCols}{20}
+$$\begin{bmatrix}
+0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+1 & 0 & 1 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1\\
+0 & 1 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+0 & 0 & 1 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0\\
+0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0\\
+0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 1 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0\\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0\\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 1\\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 1 & 0 & 1 & 0 & 0\\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 1 & 0\\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0\\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1
+\end{bmatrix}$$.
+
+We will consider the following line-stochastic matrix, associated to our labyrinth.
+
+\setcounter{MaxMatrixCols}{20}
+$$\begin{bmatrix}
+0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+1/4 & 0 & 1/4 & 0 & 0 & 1/4 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1/4\\
+0 & 1/2 & 0 & 1/2 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+0 & 0 & 1/2 & 0 & 0 & 0 & 0 & 1/2 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0\\
+0 & 1/2 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1/2 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+0 & 0 & 0 & 1/2 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1/2 & 0 & 0 & 0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1/2 & 0 & 0 & 0 & 0 & 0 & 0 & 1/2 & 0\\
+0 & 0 & 0 & 0 & 0 & 1/3 & 0 & 0 & 1/3 & 0 & 1/3 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0 & 0 & 0 & 1/3 & 0 & 0 & 1/3 & 0 & 0 & 0 & 0 & 1/3 & 0 & 0 & 0\\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0\\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1/2 & 0 & 0 & 1/2\\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1/3 & 0 & 0 & 1/3 & 0 & 1/3 & 0 & 0\\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1/2 & 0 & 1/2 & 0\\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0\\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1
+\end{bmatrix}$$.
+
+Using this matrix, we can represent the following Markov Chain:
+
+\begin{center}
+    \begin{tikzpicture}
+    
+    \tikzset{vertex/.style = {shape=circle,draw,minimum size=1.5em}}
+    \tikzset{edge/.style = {->,> = latex'}}
+    % vertices
+    \node[vertex,minimum size=1cm] (1) at  (0,10) {$1$};
+    \node[vertex,minimum size=1cm] (2) at  (3,10) {$2$};
+    \node[vertex,minimum size=1cm] (3) at  (6, 10) {$3$};
+    \node[vertex,minimum size=1cm] (4) at  (9,10) {$4$};
+    \node[vertex,minimum size=1cm] (5) at (0, 7) {$5$};
+    \node[vertex,minimum size=1cm] (6) at (3,7) {$6$};
+    \node[vertex,minimum size=1cm] (7) at (6,7) {$7$};
+    \node[vertex,minimum size=1cm] (8) at (9,7) {$8$};
+    \node[vertex, minimum size=1cm] (9) at (0,4) {$9$};
+    \node[vertex, minimum size=1cm] (10) at (3,4) {$10$};
+    \node[vertex, minimum size=1cm] (11) at (6,4) {$11$};
+    \node[vertex, minimum size=1cm] (12) at (9,4) {$12$};
+    \node[vertex, minimum size=1cm] (13) at (0,1) {$13$};
+    \node[vertex, minimum size=1cm] (14) at (3,1) {$14$};
+    \node[vertex, minimum size=1cm] (15) at (6,1) {$15$};
+    \node[vertex, minimum size=1cm] (16) at (9,1) {$16$};
+     \node[vertex, minimum size=1cm, fill=dkgreen] (17) at (-2,5.5) {$WIN$};
+     \node[vertex, minimum size=1cm, fill=bestred] (18) at (11,5.5) {$LOSE$};
+    %edges
+
+   
+    \path[->] (1) edge [bend left =25] node[above] {$1$} (2);
+    
+    \path[->] (2) edge [bend left =25] node[above] {$1/4$} (1);
+    \path[->] (2) edge [bend left =25] node[above] {$1/4$} (3);
+    \path[->] (2) edge [bend left =25] node[above] {$1/4$} (6);
+    \path[->] (2) edge [out=50,in=30,looseness=1.6] node[above] {$1/4$} (18);
+    
+    \path[->] (3) edge [bend left =25] node[above] {$1/2$} (2);
+    \path[->] (3) edge [bend left =25] node[above] {$1/2$} (4);
+
+    \path[->] (4) edge [bend left =25] node[above] {$1/2$} (3);
+    \path[->] (4) edge [bend left =25] node[above] {$1/2$} (8);
+
+    \path[->] (5) edge [bend right =25] node[above] {$1$} (17);
+
+    \path[->] (6) edge [bend left =25] node[above] {$1/2$} (2);
+    \path[->] (6) edge [bend left =25] node[above] {$1/2$} (10);
+
+    \path[->] (7) edge [bend left =25] node[above] {$1$} (11);
+
+    \path[->] (8) edge [bend left =25] node[above] {$1/2$} (4);
+    \path[->] (8) edge [bend left =25] node[above] {$1/2$} (12);
+
+    \path[->] (9) edge [bend left =25] node[above] {$1/2$} (17);
+    \path[->] (9) edge [bend left =25] node[above] {$1/2$} (10);
+
+    \path[->] (10) edge [bend left =25] node[above] {$1/3$} (6);
+    \path[->] (10) edge [bend left =25] node[above] {$1/3$} (9);
+    \path[->] (10) edge [bend left =25] node[above] {$1/3$} (11);
+
+    \path[->] (11) edge [bend left =25] node[above] {$1/3$} (7);
+    \path[->] (11) edge [bend left =25] node[above] {$1/3$} (10);
+    \path[->] (11) edge [bend left =25] node[above] {$1/3$} (15);
+
+    \path[->] (12) edge [bend left =25] node[above] {$1$} (8);
+
+    \path[->] (13) edge [bend left =25] node[above] {$1$} (17);
+
+    \path[->] (14) edge [out=-100,in=-60,looseness=1.6] node[above] {$1/2$} (18);
+    \path[->] (14) edge [bend left =25] node[above] {$1/2$} (15);
+
+    \path[->] (15) edge [bend left =25] node[above] {$1/3$} (11);
+    \path[->] (15) edge [bend left =25] node[above] {$1/3$} (14);
+    \path[->] (15) edge [bend left =25] node[above] {$1/3$} (16);
+
+    \path[->] (16) edge [bend left =25] node[above] {$1/2$} (15);
+    \path[->] (16) edge [out=-100,in=-100,looseness=1.6] node[above] {$1/2$} (17);
+
+    \draw[->] (17) to [out=130,in=170,looseness=5] (17);
+    \draw[->] (18) to [out=10,in=-30,looseness=5] (18);
+    
+    \end{tikzpicture}
+    \end{center}
+
+
+Based on this graph, we will construct a linear system to be solved. For every position in our labyrinth, based on the all possible transitions, our desire is to find out the probability to win this puzzle.
+We will make some notations: $p_{k}$ as the probability to win when you are placed on the position associated with the state k. 
+We will make the following observations: $p_{WIN} = 1$ and $p_{LOSE} = 0$.
+
+We will consider the column-vector $\Tilde{p} \in \mathbb{R}^{16 x 1}$ with its entries representing the probabilities of the 16 states.
+
+We will make one more essential observation:
+The probability of winning for a given state is directly influenced by the one-grade neighbour states, and every probability can be expressed using the law of total probabilities.
+
+    So, by considering the lines and columns only associated with the partial graph of the states, we can write the following matrix:
+
+    \setcounter{MaxMatrixCols}{20}
+$$G = \begin{bmatrix}
+0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+1/4 & 0 & 1/4 & 0 & 0 & 1/4 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+0 & 1/2 & 0 & 1/2 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+0 & 0 & 1/2 & 0 & 0 & 0 & 0 & 1/2 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+0 & 1/2 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1/2 & 0 & 0 & 0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0\\
+0 & 0 & 0 & 1/2 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1/2 & 0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1/2 & 0 & 0 & 0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0 & 0 & 1/3 & 0 & 0 & 1/3 & 0 & 1/3 & 0 & 0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0 & 0 & 0 & 1/3 & 0 & 0 & 1/3 & 0 & 0 & 0 & 0 & 1/3 & 0\\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1/2 & 0\\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1/3 & 0 & 0 & 1/3 & 0 & 1/3\\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1/2 & 0\\
+\end{bmatrix}$$.
+
+Also, by considering the column of the directed linkages between states and the win state as:
+
+\setcounter{MaxMatrixCols}{20}
+$$b=\begin{bmatrix}
+0\\
+0\\
+0\\
+0\\
+1\\
+0\\
+0\\
+0\\
+1/2\\
+0\\
+0\\
+0\\
+1\\
+0\\
+0\\
+1/2\\
+1\\
+0
+\end{bmatrix}$$.
+
+Using the information that our probabilities have to respect the law of total probabilities, we can write the following linear system:
+
+\begin{center}
+$\Tilde{p} = G \Tilde{p} + b$,
+\end{center}
+
+with the unknown vector $\Tilde{p}$. Now we will make use of the Jacobi Method for solving this linear equation.
+
+Let us make some observation about solving the linear systems using Jacobi Method.
+Given a linear system $Ax = b$, we would like to solve it by using an iterative method. Jacobi Method uses the simple idea of writing the matrix $A$ as a difference of matrices $D$ and $P$, where $D$ represents the matrix that only contains the entries placed on the principal diagonal of $A$.
+
+\begin{center}$A = D - P$\end{center}
+
+So, by denoting $x_{p}$ the values of the solution at every iterative step $p$, we can iterate following the rule:
+
+\begin{center}
+    $x_{p+1} = D^{-1} P x_{p} + D^{-1} b$
+\end{center}
+
+The convergence of this method is assured by $\rho(D^{-1} P) < 1$
+
+In our case, we have to solve the system
+
+
+\begin{center}
+    $(I_n - G) \Tilde{p} = b$
+\end{center}
+
+
+We will present below the code used for solving this problem, based on the Jacobi method:
+
+
+ \textbf{jacobi.m}
+\lstset{frame=tb,
+  language=Octave,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3
+}
+    \begin{lstlisting}
+    function [x, iter] = jacobi(A, b, max_iter, tol)
+  [n] = size(A, 1);
+  D = diag(diag(A));
+  P = D - A;
+  
+  disp("The spectral radius of the iteration matrix")
+  max(abs(eig(inv(D) * P)))
+  G = inv(D) * P;
+  b = inv(D) * b;
+  x0 = zeros(n, 1);
+  
+  for iteration = 1 : max_iter
+    iter = iteration;
+    
+    x = G * x0 + b;
+    if (norm(x - x0) < tol)
+      break;
+    endif
+    
+    x0 = x;
+  endfor
+  
+  decimals = round(-log(tol)/log(10));
+  x = round(x * 10^decimals);
+  x = x / 10^decimals;
+endfunction
+    \end{lstlisting}  
+
+
+\textbf{solveMarkov.m}
+\lstset{frame=tb,
+  language=Octave,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3
+}
+    \begin{lstlisting}
+    clear; clc; close all;
+load Matrix;
+
+[n] = size(Matrix, 1);
+G = Matrix(1 : n - 2, 1 : n - 2);
+b  = Matrix(1:n - 2, n - 1);
+
+[x, iter] = jacobi(eye(n - 2) - G, b, 10000, 1e-6);
+
+disp("Probabilitatile sunt:")
+disp(x);
+
+disp("Numarul necesar de iteratii:")
+disp(iter)
+    \end{lstlisting}  
+
+By running solving the linear system with the proposed methods, we will obtain the following solution for our column-vector:
+
+\setcounter{MaxMatrixCols}{20}
+$$\Tilde{p}=\begin{bmatrix}
+
+
+0.190474\\0.190474\\0.190472
+                 \\0.19047
+                       \\1
+                \\0.380951
+                \\0.547618
+                \\0.190469
+                \\0.785714
+                \\0.571427
+                \\0.547618
+                \\0.190468
+                       \\1
+                \\0.261904
+                \\0.523809
+                \\0.761904
+\end{bmatrix}$$.
+
+    So, for the given puzzle, the probability of escaping the labyrinth by entering in the state 4 is 0.19047.
+\end{document}
